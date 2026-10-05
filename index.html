@@ -1,0 +1,758 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F1 Study Timer 🏎️</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: Arial, Helvetica, sans-serif;
+  background: radial-gradient(circle at top, #252525, #080808 70%);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 25px;
+}
+
+.container {
+  width: min(1000px, 100%);
+  background: #151515;
+  border: 1px solid #333;
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+
+header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.flag {
+  font-size: 2rem;
+}
+
+h1 {
+  font-size: clamp(2rem,5vw,3.5rem);
+  font-weight: 900;
+  letter-spacing: -2px;
+}
+
+h1 span {
+  color: #e10600;
+}
+
+.subtitle {
+  color: #999;
+  margin-top: 7px;
+}
+
+.tracks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+  gap: 10px;
+  margin: 25px 0;
+}
+
+.track-button {
+  background: #202020;
+  color: white;
+  border: 1px solid #3a3a3a;
+  padding: 13px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.track-button:hover {
+  transform: translateY(-2px);
+  border-color: #e10600;
+}
+
+.track-button.active {
+  background: #e10600;
+  border-color: #e10600;
+}
+
+.track-name {
+  font-weight: bold;
+  display: block;
+}
+
+.track-time {
+  font-size: .8rem;
+  opacity: .75;
+}
+
+.timer {
+  text-align: center;
+  margin: 15px 0 25px;
+}
+
+.time {
+  font-family: "Courier New", monospace;
+  font-size: clamp(3rem,10vw,6rem);
+  font-weight: bold;
+  letter-spacing: 4px;
+}
+
+.status {
+  color: #aaa;
+  margin-top: 5px;
+}
+
+.lap-info {
+  margin-top: 12px;
+  color: #ddd;
+  font-size: 1.05rem;
+}
+
+.lap-info strong {
+  color: #e10600;
+}
+
+.track-container {
+  position: relative;
+  width: 100%;
+  height: 440px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid #2d2d2d;
+  margin-bottom: 25px;
+}
+
+.track-label {
+  position: absolute;
+  top: 15px;
+  left: 18px;
+  z-index: 5;
+  color: #aaa;
+  font-size: .9rem;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+}
+
+.track-outline {
+  fill: none;
+  stroke: #292929;
+  stroke-width: 65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.track-road {
+  fill: none;
+  stroke: #777;
+  stroke-width: 47;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.track-line {
+  fill: none;
+  stroke: #ddd;
+  stroke-width: 2;
+  stroke-dasharray: 8 10;
+  opacity: .5;
+}
+
+.progress {
+  fill: none;
+  stroke: #e10600;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.car {
+  position: absolute;
+  width: 42px;
+  height: 20px;
+  background: #e10600;
+  border-radius: 8px 12px 5px 5px;
+  transform: translate(-50%,-50%);
+  z-index: 10;
+  box-shadow: 0 0 15px rgba(225,6,0,.7);
+  transition: left .4s linear, top .4s linear;
+}
+
+.car::before {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 11px;
+  background: #222;
+  top: 4px;
+  left: 12px;
+  border-radius: 4px;
+}
+
+.car::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 5px;
+  background: #ffd900;
+  right: 2px;
+  top: 7px;
+  border-radius: 2px;
+}
+
+.wheel {
+  position: absolute;
+  width: 7px;
+  height: 8px;
+  background: #050505;
+  border-radius: 2px;
+}
+
+.wheel.one { left: 6px; top: -4px; }
+.wheel.two { left: 6px; bottom: -4px; }
+.wheel.three { right: 7px; top: -4px; }
+.wheel.four { right: 7px; bottom: -4px; }
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  color: #888;
+  font-size: .85rem;
+  margin-top: 15px;
+}
+
+.bar {
+  height: 6px;
+  background: #292929;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 7px;
+}
+
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #e10600;
+  transition: width .4s linear;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+button.control {
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.start {
+  background: #e10600;
+  color: white;
+}
+
+.pause {
+  background: white;
+  color: #111;
+}
+
+.reset {
+  background: #303030;
+  color: white;
+}
+
+button.control:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.finished {
+  animation: flash .7s ease-in-out 3;
+}
+
+@keyframes flash {
+  50% {
+    box-shadow: 0 0 50px rgba(225,6,0,.8);
+  }
+}
+
+@media(max-width:600px) {
+  .container {
+    padding: 18px;
+  }
+
+  .track-container {
+    height: 330px;
+  }
+
+  .time {
+    letter-spacing: 1px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="app">
+
+<header>
+  <div class="flag">🏁</div>
+  <h1>F1 <span>STUDY</span> TIMER</h1>
+  <p class="subtitle">
+    Choose your circuit. Start studying. Race to the finish.
+  </p>
+</header>
+
+<div class="tracks">
+
+  <button class="track-button active"
+          onclick="selectTrack('monaco',this)">
+    <span class="track-name">🇲🇨 Monaco</span>
+    <span class="track-time">25 minutes</span>
+  </button>
+
+  <button class="track-button"
+          onclick="selectTrack('silverstone',this)">
+    <span class="track-name">🇬🇧 Silverstone</span>
+    <span class="track-time">30 minutes</span>
+  </button>
+
+  <button class="track-button"
+          onclick="selectTrack('monza',this)">
+    <span class="track-name">🇮🇹 Monza</span>
+    <span class="track-time">45 minutes</span>
+  </button>
+
+  <button class="track-button"
+          onclick="selectTrack('spa',this)">
+    <span class="track-name">🇧🇪 Spa</span>
+    <span class="track-time">60 minutes</span>
+  </button>
+
+  <button class="track-button"
+          onclick="selectTrack('singapore',this)">
+    <span class="track-name">🇸🇬 Singapore</span>
+    <span class="track-time">90 minutes</span>
+  </button>
+
+</div>
+
+<div class="timer">
+
+  <div class="time" id="time">25:00</div>
+
+  <div class="status" id="status">
+    Ready for lights out.
+  </div>
+
+  <div class="lap-info">
+    🏎️ This session = approximately
+    <strong id="laps">19.4 laps</strong>
+  </div>
+
+</div>
+
+<div class="track-container" id="trackContainer">
+
+  <div class="track-label" id="trackLabel">
+    MONACO GRAND PRIX
+  </div>
+
+  <svg viewBox="0 0 900 440" preserveAspectRatio="none">
+
+    <path
+      class="track-outline"
+      d="M180 350
+         C80 330 70 170 170 100
+         C270 30 390 70 450 145
+         C520 230 620 260 710 210
+         C810 155 850 250 790 325
+         C720 405 570 365 500 310
+         C410 240 300 390 180 350"/>
+
+    <path
+      class="track-road"
+      d="M180 350
+         C80 330 70 170 170 100
+         C270 30 390 70 450 145
+         C520 230 620 260 710 210
+         C810 155 850 250 790 325
+         C720 405 570 365 500 310
+         C410 240 300 390 180 350"/>
+
+    <path
+      class="track-line"
+      d="M180 350
+         C80 330 70 170 170 100
+         C270 30 390 70 450 145
+         C520 230 620 260 710 210
+         C810 155 850 250 790 325
+         C720 405 570 365 500 310
+         C410 240 300 390 180 350"/>
+
+    <path
+      id="progressPath"
+      class="progress"
+      d="M180 350
+         C80 330 70 170 170 100
+         C270 30 390 70 450 145
+         C520 230 620 260 710 210
+         C810 155 850 250 790 325
+         C720 405 570 365 500 310
+         C410 240 300 390 180 350"/>
+
+  </svg>
+
+  <div class="car" id="car">
+    <div class="wheel one"></div>
+    <div class="wheel two"></div>
+    <div class="wheel three"></div>
+    <div class="wheel four"></div>
+  </div>
+
+</div>
+
+<div class="progress-info">
+  <span>START</span>
+  <span id="percent">0%</span>
+  <span>FINISH 🏁</span>
+</div>
+
+<div class="bar">
+  <div class="bar-fill" id="barFill"></div>
+</div>
+
+<div class="controls">
+
+  <button class="control start" onclick="startTimer()">
+    🚦 START
+  </button>
+
+  <button class="control pause" onclick="pauseTimer()">
+    ⏸ PAUSE
+  </button>
+
+  <button class="control reset" onclick="resetTimer()">
+    ↻ RESET
+  </button>
+
+</div>
+
+</div>
+
+<script>
+
+const tracks = {
+
+  /*
+   * Average race lap time calculated from
+   * the 2025 Grand Prix winner's race time
+   * divided by the number of completed laps.
+   */
+
+  monaco: {
+    name: "MONACO GRAND PRIX",
+    minutes: 25,
+    averageLapSeconds: 77.36
+  },
+
+  silverstone: {
+    name: "SILVERSTONE GRAND PRIX",
+    minutes: 30,
+    averageLapSeconds: 112.21
+  },
+
+  monza: {
+    name: "MONZA GRAND PRIX",
+    minutes: 45,
+    averageLapSeconds: 83.10
+  },
+
+  spa: {
+    name: "SPA-FRANCORCHAMPS GRAND PRIX",
+    minutes: 60,
+    averageLapSeconds: 116.42
+  },
+
+  singapore: {
+    name: "SINGAPORE GRAND PRIX",
+    minutes: 90,
+    averageLapSeconds: 97.13
+  }
+
+};
+
+let selectedTrack = "monaco";
+
+let totalSeconds = tracks.monaco.minutes * 60;
+let remainingSeconds = totalSeconds;
+
+let timer = null;
+let running = false;
+
+const timeDisplay =
+  document.getElementById("time");
+
+const statusDisplay =
+  document.getElementById("status");
+
+const barFill =
+  document.getElementById("barFill");
+
+const percentDisplay =
+  document.getElementById("percent");
+
+const lapsDisplay =
+  document.getElementById("laps");
+
+const car =
+  document.getElementById("car");
+
+const trackLabel =
+  document.getElementById("trackLabel");
+
+const app =
+  document.getElementById("app");
+
+const progressPath =
+  document.getElementById("progressPath");
+
+const pathLength =
+  progressPath.getTotalLength();
+
+progressPath.style.strokeDasharray = pathLength;
+progressPath.style.strokeDashoffset = pathLength;
+
+
+/* ---------------------------------------
+   SELECT TRACK
+--------------------------------------- */
+
+function selectTrack(track, button) {
+
+  pauseTimer();
+
+  selectedTrack = track;
+
+  totalSeconds =
+    tracks[track].minutes * 60;
+
+  remainingSeconds =
+    totalSeconds;
+
+  document
+    .querySelectorAll(".track-button")
+    .forEach(btn =>
+      btn.classList.remove("active")
+    );
+
+  button.classList.add("active");
+
+  trackLabel.textContent =
+    tracks[track].name;
+
+  app.classList.remove("finished");
+
+  updateDisplay();
+}
+
+
+/* ---------------------------------------
+   START TIMER
+--------------------------------------- */
+
+function startTimer() {
+
+  if (running) return;
+
+  if (remainingSeconds <= 0) {
+    resetTimer();
+  }
+
+  running = true;
+
+  statusDisplay.textContent =
+    "🏎️ You're on track! Keep studying.";
+
+  timer = setInterval(() => {
+
+    remainingSeconds--;
+
+    updateDisplay();
+
+    if (remainingSeconds <= 0) {
+
+      clearInterval(timer);
+
+      timer = null;
+      running = false;
+
+      remainingSeconds = 0;
+
+      updateDisplay();
+
+      statusDisplay.textContent =
+        "🏆 CHEQUERED FLAG! Study session complete!";
+
+      app.classList.add("finished");
+
+    }
+
+  },1000);
+}
+
+
+/* ---------------------------------------
+   PAUSE
+--------------------------------------- */
+
+function pauseTimer() {
+
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+
+  running = false;
+
+  if (
+    remainingSeconds > 0 &&
+    remainingSeconds < totalSeconds
+  ) {
+
+    statusDisplay.textContent =
+      "⏸ Pit stop. Timer paused.";
+
+  }
+}
+
+
+/* ---------------------------------------
+   RESET
+--------------------------------------- */
+
+function resetTimer() {
+
+  pauseTimer();
+
+  remainingSeconds =
+    totalSeconds;
+
+  app.classList.remove("finished");
+
+  statusDisplay.textContent =
+    "Ready for lights out.";
+
+  updateDisplay();
+}
+
+
+/* ---------------------------------------
+   UPDATE DISPLAY
+--------------------------------------- */
+
+function updateDisplay() {
+
+  const minutes =
+    Math.floor(remainingSeconds / 60);
+
+  const seconds =
+    remainingSeconds % 60;
+
+  timeDisplay.textContent =
+    String(minutes).padStart(2,"0") +
+    ":" +
+    String(seconds).padStart(2,"0");
+
+
+  /* Study progress */
+
+  const progress =
+    1 - remainingSeconds / totalSeconds;
+
+  const percentage =
+    Math.round(progress * 100);
+
+  percentDisplay.textContent =
+    percentage + "%";
+
+  barFill.style.width =
+    percentage + "%";
+
+
+  /* Estimated laps */
+
+  const estimatedLaps =
+    (totalSeconds /
+      tracks[selectedTrack].averageLapSeconds);
+
+  lapsDisplay.textContent =
+    estimatedLaps.toFixed(1) + " laps";
+
+
+  /* Move car */
+
+  moveCar(progress);
+
+
+  /* Draw red progress line */
+
+  progressPath.style.strokeDashoffset =
+    pathLength * (1 - progress);
+
+}
+
+
+/* ---------------------------------------
+   MOVE CAR
+--------------------------------------- */
+
+function moveCar(progress) {
+
+  const point =
+    progressPath.getPointAtLength(
+      pathLength * progress
+    );
+
+  const x =
+    (point.x / 900) * 100;
+
+  const y =
+    (point.y / 440) * 100;
+
+  car.style.left =
+    x + "%";
+
+  car.style.top =
+    y + "%";
+}
+
+
+/* Initial display */
+
+updateDisplay();
+
+</script>
+
+</body>
+</html>
+```
